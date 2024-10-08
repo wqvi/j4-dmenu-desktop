@@ -29,6 +29,7 @@ static void add_applications_dir(std::string &str) {
 
 stringlist_t build_search_path(std::string xdg_data_home, std::string home,
                                std::string xdg_data_dirs,
+			       std::string xdg_desktop_dir,
                                bool (*is_directory_func)(const std::string &)) {
     stringlist_t result;
 
@@ -38,6 +39,9 @@ stringlist_t build_search_path(std::string xdg_data_home, std::string home,
     add_applications_dir(xdg_data_home);
     if (is_directory_func(xdg_data_home))
         result.push_back(xdg_data_home);
+
+    if (is_directory_func(xdg_desktop_dir))
+	    result.push_back(xdg_desktop_dir);
 
     if (xdg_data_dirs.empty())
         xdg_data_dirs = "/usr/local/share/:/usr/share/";
@@ -55,5 +59,7 @@ stringlist_t build_search_path(std::string xdg_data_home, std::string home,
 stringlist_t get_search_path() {
     return build_search_path(get_variable("XDG_DATA_HOME"),
                              get_variable("HOME"),
-                             get_variable("XDG_DATA_DIRS"), is_directory);
+                             get_variable("XDG_DATA_DIRS"), 
+			     get_xdg_dir("XDG_DESKTOP_DIR"),
+			     is_directory);
 }
