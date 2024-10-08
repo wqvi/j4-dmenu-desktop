@@ -21,6 +21,8 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fstream>
+#include <algorithm>
 
 stringlist_t split(const std::string &str, char delimiter) {
     stringlist_t result;
@@ -102,6 +104,43 @@ std::string get_variable(const std::string &var) {
         return env;
     } else
         return "";
+}
+
+std::string get_xdg_dir(const std::string &var) {
+	std::string line;
+
+	const std::string file = get_variable("HOME") + "/.config/user-dirs.dirs";
+
+	std::ifstream user_dirs_file{file};
+	if (!user_dirs_file.is_open()) {
+		fmt::print("Failed to open file: " + file);
+		return "";
+	}
+
+	while (getline(user_dirs_file, line)) {
+		if (line.at(0) == '#') {
+			continue;
+		}
+		std::string delimiter = "=";
+		std::string token = line.substr(0, line.find(delimiter));
+		std::string key = line.substr(line.find(delimiter) + delimiter.length(), line.find('\n'));
+		if (token == var) {
+			key.erase(std::remove(key.begin(), key.end(), '\"'), key.end());
+			delimiter = "/";
+			token = key.substr(0, key.find(delimiter));
+			key = key.substr(key.find(delimiter) + delimiter.length(), key.find('\n'));
+			if (token.at(0) == '$') {
+				delimiter = "$";
+				token = get_variable(token.substr(token.find(delimiter) + delimiter.length(), token.find('\n')));
+			}
+			user_dirs_file.close();
+			return token + '/' + key + '/';
+		}
+	}
+
+	user_dirs_file.close();
+
+	return "";
 }
 
 void fclose_deleter::operator()(FILE *f) const noexcept {
